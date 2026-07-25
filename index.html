@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Arcade</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --panel-2: #1f2937;
+        --text: #f9fafb;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+        --accent-2: #a78bfa;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(135deg, var(--bg), #020617);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      header {
+        text-align: center;
+        padding: 24px 0 32px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 2.2rem;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        max-width: 680px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .card {
+        background: rgba(17, 24, 39, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      }
+
+      .card h2 {
+        margin-top: 0;
+        font-size: 1.2rem;
+      }
+
+      .card p {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-weight: 700;
+        cursor: pointer;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        color: #020617;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+      }
+
+      .choices {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 12px 0;
+      }
+
+      .result {
+        min-height: 24px;
+        margin-top: 12px;
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .guess-wrap {
+        display: flex;
+        gap: 8px;
+        margin: 10px 0 6px;
+      }
+
+      input {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: var(--panel-2);
+        color: var(--text);
+      }
+
+      .target {
+        width: 120px;
+        height: 120px;
+        margin: 14px auto;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: radial-gradient(circle, #f59e0b, #ef4444);
+        color: white;
+        font-weight: 800;
+        font-size: 1rem;
+        user-select: none;
+        cursor: pointer;
+        box-shadow: inset 0 0 0 8px rgba(255,255,255,0.1);
+        transition: transform 0.15s ease;
+      }
+
+      .target:active {
+        transform: scale(0.95);
+      }
+
+      .score-row {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+
+      .small {
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Mini Arcade</h1>
+        <p class="subtitle">
+          A small dark-mode playground with a few fast games you can play right in the browser.
+        </p>
+      </header>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Rock • Paper • Scissors</h2>
+          <p>Pick one and see if you beat the computer.</p>
+          <div class="choices">
+            <button data-choice="rock">Rock</button>
+            <button data-choice="paper">Paper</button>
+            <button data-choice="scissors">Scissors</button>
+          </div>
+          <div class="result" id="rps-result">Choose your move.</div>
+        </section>
+
+        <section class="card">
+          <h2>Guess the Number</h2>
+          <p>Try to find the hidden number from 1 to 20.</p>
+          <div class="guess-wrap">
+            <input id="guess-input" type="number" min="1" max="20" placeholder="Enter a number" />
+            <button id="guess-btn">Check</button>
+          </div>
+          <div class="result" id="guess-result">You have 5 attempts.</div>
+          <div class="small">Attempts left: <span id="attempts">5</span></div>
+        </section>
+
+        <section class="card">
+          <h2>Catch the Dot</h2>
+          <p>Tap the glowing target as many times as you can.</p>
+          <div class="target" id="target">Tap Me</div>
+          <div class="score-row">
+            <span>Score: <span id="score">0</span></span>
+            <span>Best: <span id="best">0</span></span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const rpsButtons = document.querySelectorAll('[data-choice]');
+      const rpsResult = document.getElementById('rps-result');
+      const choices = ['rock', 'paper', 'scissors'];
+
+      rpsButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const player = button.dataset.choice;
+          const computer = choices[Math.floor(Math.random() * choices.length)];
+          const result = getRpsResult(player, computer);
+          rpsResult.textContent = `You chose ${player}. Computer chose ${computer}. ${result}`;
+        });
+      });
+
+      function getRpsResult(player, computer) {
+        if (player === computer) return 'It\'s a tie!';
+        if (
+          (player === 'rock' && computer === 'scissors') ||
+          (player === 'paper' && computer === 'rock') ||
+          (player === 'scissors' && computer === 'paper')
+        ) {
+          return 'You win!';
+        }
+        return 'You lose!';
+      }
+
+      const guessInput = document.getElementById('guess-input');
+      const guessBtn = document.getElementById('guess-btn');
+      const guessResult = document.getElementById('guess-result');
+      const attemptsLabel = document.getElementById('attempts');
+
+      let secretNumber = randomNumber();
+      let attempts = 5;
+
+      guessBtn.addEventListener('click', () => {
+        const guess = Number(guessInput.value);
+        if (!guess || guess < 1 || guess > 20) {
+          guessResult.textContent = 'Please enter a number from 1 to 20.';
+          return;
+        }
+
+        attempts -= 1;
+        attemptsLabel.textContent = attempts;
+
+        if (guess === secretNumber) {
+          guessResult.textContent = `Correct! ${secretNumber} was the number.`;
+          guessBtn.disabled = true;
+        } else if (attempts === 0) {
+          guessResult.textContent = `Game over. The number was ${secretNumber}.`;
+          guessBtn.disabled = true;
+        } else if (guess < secretNumber) {
+          guessResult.textContent = 'Too low. Try a higher number.';
+        } else {
+          guessResult.textContent = 'Too high. Try a lower number.';
+        }
+      });
+
+      function randomNumber() {
+        return Math.floor(Math.random() * 20) + 1;
+      }
+
+      const target = document.getElementById('target');
+      const scoreLabel = document.getElementById('score');
+      const bestLabel = document.getElementById('best');
+      let score = 0;
+      let best = 0;
+
+      target.addEventListener('click', () => {
+        score += 1;
+        scoreLabel.textContent = score;
+        if (score > best) {
+          best = score;
+          bestLabel.textContent = best;
+        }
+        target.textContent = 'Nice!';
+        setTimeout(() => {
+          target.textContent = 'Tap Me';
+        }, 180);
+      });
+    </script>
+  </body>
+</html>
